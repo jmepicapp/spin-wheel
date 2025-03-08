@@ -193,6 +193,8 @@
         }
 
         function spin() {
+            document.getElementById("result1").innerText = '';
+            document.getElementById("result2").innerText = '';
             Object.keys(roulettes).forEach(rouletteId => {
                 const options = roulettes[rouletteId];
                 if (options.length === 0) return;
