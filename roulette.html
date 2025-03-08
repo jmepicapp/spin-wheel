@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double Spin Wheel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .roulette-container {
+            text-align: center;
+            position: relative;
+        }
+        canvas {
+            border: 5px solid #333;
+            border-radius: 50%;
+            background: white;
+        }
+        .input-group {
+            margin-top: 20px;
+        }
+        input {
+            padding: 5px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .option-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        .option-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border: 1px solid #ccc;
+            margin: 5px 0;
+            background: #f9f9f9;
+        }
+        .option-list img {
+            width: 30px;
+            height: 30px;
+            margin-right: 5px;
+        }
+        .result {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .result img {
+            max-width: 80px;
+            display: block;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Double Spin Wheel</h1>
+
+    <div class="input-group">
+        <input type="text" id="optionText" placeholder="Option text">
+        <input type="text" id="optionImage" placeholder="Picture URL (optional)">
+        <button onclick="addOption('roulette1')">Add to Vocabulary</button>
+        <button onclick="addOption('roulette2')">Add to Students</button>
+    </div>
+
+    <div class="container">
+        <div>
+            <h2>Vocabulary options</h2>
+            <ul id="list1" class="option-list"></ul>
+        </div>
+
+        <div class="roulette-container">
+            <h2>Vocabulary</h2>
+            <canvas id="roulette1" width="200" height="200"></canvas>
+            <div id="result1" class="result"></div>
+        </div>
+
+        <div class="roulette-container">
+            <h2>Students</h2>
+            <canvas id="roulette2" width="200" height="200"></canvas>
+            <div id="result2" class="result"></div>
+        </div>
+
+        <div>
+            <h2>Students options</h2>
+            <ul id="list2" class="option-list"></ul>
+        </div>
+    </div>
+
+    <button onclick="spin()">Spin both wheels</button>
+
+    <script>
+        const roulettes = {
+            roulette1: [],
+            roulette2: []
+        };
+
+        function addOption(rouletteId) {
+            const text = document.getElementById("optionText").value.trim();
+            const imgUrl = document.getElementById("optionImage").value.trim();
+
+            if (!text && !imgUrl) return alert("Debes ingresar texto o una imagen.");
+
+            roulettes[rouletteId].push({ text, imgUrl });
+            drawRoulette(rouletteId);
+            updateList(rouletteId);
+            document.getElementById("optionText").value = "";
+            document.getElementById("optionImage").value = "";
+        }
+
+        function removeOption(rouletteId, index) {
+            roulettes[rouletteId].splice(index, 1);
+            drawRoulette(rouletteId);
+            updateList(rouletteId);
+        }
+
+        function updateList(rouletteId) {
+            const list = document.getElementById(`list${rouletteId.slice(-1)}`);
+            list.innerHTML = "";
+            roulettes[rouletteId].forEach((option, index) => {
+                const li = document.createElement("li");
+                if (option.imgUrl) {
+                    const img = document.createElement("img");
+                    img.src = option.imgUrl;
+                    li.appendChild(img);
+                }
+                li.appendChild(document.createTextNode(option.text));
+                const button = document.createElement("button");
+                button.innerText = "❌";
+                button.onclick = () => removeOption(rouletteId, index);
+                li.appendChild(button);
+                list.appendChild(li);
+            });
+        }
+
+        function drawRoulette(rouletteId) {
+            const canvas = document.getElementById(rouletteId);
+            const ctx = canvas.getContext("2d");
+            const options = roulettes[rouletteId];
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (options.length === 0) return;
+
+            const total = options.length;
+            const sliceAngle = (2 * Math.PI) / total;
+            const radius = canvas.width / 2;
+
+            options.forEach((option, i) => {
+                const startAngle = i * sliceAngle;
+                const endAngle = (i + 1) * sliceAngle;
+
+                ctx.fillStyle = `hsl(${(i * 360) / total}, 100%, 70%)`;
+                ctx.beginPath();
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = "#000";
+                ctx.font = "12px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                const textAngle = startAngle + sliceAngle / 2;
+                const textX = radius + Math.cos(textAngle) * (radius * 0.7);
+                const textY = radius + Math.sin(textAngle) * (radius * 0.7);
+
+                if (option.imgUrl) {
+                    const img = new Image();
+                    img.src = option.imgUrl;
+                    img.onload = () => ctx.drawImage(img, textX - 15, textY - 15, 30, 30);
+                } else {
+                    ctx.fillText(option.text, textX, textY);
+                }
+            });
+        }
+
+        function spin() {
+            Object.keys(roulettes).forEach(rouletteId => {
+                const options = roulettes[rouletteId];
+                if (options.length === 0) return;
+
+                const canvas = document.getElementById(rouletteId);
+                const resultDiv = document.getElementById("result" + rouletteId.slice(-1));
+                const ctx = canvas.getContext("2d");
+
+                let rotation = 0;
+                let speed = Math.random() * (50 - 20) + 20;
+                const totalRotation = 360 * 5;
+                const targetIndex = Math.floor(Math.random() * options.length);
+                const targetAngle = targetIndex * (360 / options.length);
+
+                const spinAnimation = setInterval(() => {
+                    rotation += speed;
+                    speed *= 0.98;
+
+                    if (speed <= 0.5) {
+                        clearInterval(spinAnimation);
+                        resultDiv.innerText = `${options[targetIndex].text}`;
+                    }
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.save();
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate((rotation * Math.PI) / 180);
+                    ctx.translate(-canvas.width / 2, -canvas.height / 2);
+                    drawRoulette(rouletteId);
+                    ctx.restore();
+                }, 30);
+            });
+        }
+    </script>
+
+</body>
+</html>
